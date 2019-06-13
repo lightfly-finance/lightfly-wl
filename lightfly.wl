@@ -2,8 +2,9 @@
 
 BeginPackage["Lightfly`"]
 
-Stock::usage="get stock data..."
-FinanceGet::usage="get finance data."
+Stock::usage="fetch stock data."
+FinanceGet::usage="fetch finance data."
+Fund::usage = "fetch fund data. "
 
 Begin["`Private`"]
 
@@ -48,10 +49,17 @@ Fetch[uri_, params_, config_] := URLRead[
     {"StatusCode", "Body"}
 ]
 
-FinanceGet[uri_, params_, config_] := ImportString[
-    Fetch[uri, params, config]["Body"], 
-    {"CSV", "Dataset"}, 
-    "HeaderLines" -> 1
+FinanceGet[uri_, params_, config_] := If[
+    uri == "/api/fund/basic/info",
+    ImportString[
+        Fetch[uri, params, config]["Body"],
+        {"JSON"}
+    ],
+    ImportString[
+        Fetch[uri, params, config]["Body"], 
+        {"CSV", "Dataset"}, 
+        "HeaderLines" -> 1
+    ]
 ]
 
 noPamarsMap = <|
@@ -79,9 +87,22 @@ paramsMap = <|
     "growth.ability" -> "/api/stock/indicator/growthability"
 
 |>
+
+fundNoParamsMap = <|
+    "internet.banking" -> "/api/fund/internet/banking"
+|>
+fundParamsMap = <|
+    "daily.history" -> "/api/fund/history/daily",
+    "basic.info" -> "/api/fund/basic/info"
+|>
+
 Stock[s_ /; KeyExistsQ[noPamarsMap, s], c_] :=  FinanceGet[noPamarsMap[[s]], {}, c]
 
 Stock[s_ /; KeyExistsQ[paramsMap, s], p_, c_] :=  FinanceGet[paramsMap[[s]], p, c]
+
+Fund[s_ /; KeyExistsQ[fundNoParamsMap, s], c_] :=  FinanceGet[fundNoParamsMap[[s]], {}, c]
+
+Fund[s_ /; KeyExistsQ[fundParamsMap, s], p_, c_] :=  FinanceGet[fundParamsMap[[s]], p, c]
 
 End[]
 
